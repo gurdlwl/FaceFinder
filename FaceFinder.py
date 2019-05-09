@@ -1,51 +1,97 @@
-import dlib
-import cv2
+import dlib # face detection, face recognition
+import cv2 # 영상처리
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.patheffects as path_effects
+
+img_path = {
+  'imjunhyuk':'Image/.jpg'
+}
+
+descs = {
+  'imjunhyuk':None
+}
 
 detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor('models/shape_predictor_68_face_landmarks.dat')
-facerec = dlib.face_recognition_model_v1('models/dlib_face_recognition_resnet_model_v1.dat')
+shapePredic = dlib.shape_predictor('Models/shape_predictor_68_face_landmarks.dat')
+faceRecog = dlib.face_recognition_model_v1('Models/dlib_face_recognition_resnet_model_v1.dat')
 
-def read_img(img_path):
-  img = cv2.imread(img_path)
-  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-  return img
-
-def encode_face(img):
+# 얼굴 찾는 함수
+def find_faces(img):
   dets = detector(img, 1)
 
   if len(dets) == 0:
-    return np.empty(0)
+    return np.empty(0), np.empty(0), np.empty(0)
+
+  rects, shapes = [], []
+  shapes_np = np.zeros((len(dets), 68, 2), dtype=np.int)
 
   for k, d in enumerate(dets):
-    print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(k, d.left(), d.top(), d.right(), d.bottom()))
-    shape = sp(img, d)
-    face_descriptor = facerec.compute_face_descriptor(img, shape)
+    rect = ((d.left(), d.top()), (d.right(), d.bottom()))
+    rects.append(rect)
 
-    return np.array(face_descriptor)
+    shape = shapePredic(img, d)
 
-# main
-img1_path = '/image/jack.jpg'
-img1 = read_img(img1_path)
-img1_encoded = encode_face(img1)
+    for i in range(0, 68):
+      shapes_np[k][i] = (shape.part(i).x, shape.part(i).y)
+    shapes.append(shape)
 
-cap = cv2.VideoCapture(0)
+  return rects, shapes, shapes_np
 
-if not cap.isOpened():
-  exit()
+# 얼굴 인코딩 하는 함수
+def encode_face(img, shapes):
+  face_descriptors = []
+  for shape in shapes:
+    face_descriptor = faceRecog.compute_face_descriptor(img, shape)
+    face_descriptors.append(np.array(face_descriptor))
 
-while True:
-  ret, img2 = cap.read()
-  if not ret:
-    break
+  return np.array(face_descriptors)
 
-  img2 = cv2.resize(img2, (640, img2.shape[0] * 640 // img2.shape[1]))
-  img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-  img2_encoded = encode_face(img2)
+for name, img_path in img_path.items():
+  img_bgr = cv2.imread(img_path)
+  img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+  _,img_shapes,_ = find_faces(img_rgb)
+  descs[name] =  encode_face(img_rgb, img_shapes)[0]
 
-  if len(img2_encoded) == 0:
-    continue
+np.save('Result/descs.npy', descs)
+print(descs)
 
-  dist = np.linalg.norm(img1_encoded - img2_encoded, axis=0)
+img_bgr = cv2.imread('Image/.jpg')
+img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-  print('%s, Distance: %s' % (dist < 0.6, dist))
+rects, shapes, _ = find_faces(img_rgb)
+descriptors = encode_face(img_rgb, shapes)
+
+fig, ax = plt.subplots(1, figsize=(20, 20))
+ax.imshow(img_rgb)
+
+for i, desc in enumerate(descriptors):
+  found = False
+
+  for name, saved_desc in descs.items():
+    dist = np.linalg.norm([desc] - saved_desc, axis=1) # a, b 벡터 사이의 거리를 구함
+
+    if dist < 0.6:
+      found = True
+
+      text = ax.text(rects[i][0][0], rects[i][0][1], name,
+                     color='b', fontsize=40, fontweight='bold')
+      text.set_path_effects([path_effects.Stroke(linewidth=10, foreground='white'), path_effects])
+      rect = patches.Rectangle(rects[i][0],
+                               rects[i][1][1] - rects[i][0][1],
+                               rects[i][1][0] - rects[i][0][0],
+                               linewidth=2, edgecolor='w', facecolor='none')
+      ax.add_patch(rect)
+      break
+
+    if not found:
+      ax.text(rects[i][0][0], rects[i][0][1], 'unknown',
+              color='r', fontsize=20, fontweight='bold')
+      rect = patches.Rectangle(rects[i][0],
+                               rects[i][1][1] - rects[i][0][1],
+                               rects[i][1][0] - rects[i][0][0],
+                               linewidth=2, edgecolor='r', facecolor='none')
+      ax.add_patch(rect)
+
+    plt.show()
