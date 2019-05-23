@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 import matplotlib.patheffects as path_effects
 
 img_path = {
-  'imjunhyuk':'Image/.jpg'
+  'imjunhyuk':'Image/imjunhyuk.jpg'
 }
 
 descs = {
@@ -52,12 +52,12 @@ for name, img_path in img_path.items():
   img_bgr = cv2.imread(img_path)
   img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
   _,img_shapes,_ = find_faces(img_rgb)
-  descs[name] =  encode_face(img_rgb, img_shapes)[0]
+  descs[name] = encode_face(img_rgb, img_shapes)[0]
 
 np.save('Result/descs.npy', descs)
 print(descs)
 
-img_bgr = cv2.imread('Image/.jpg')
+img_bgr = cv2.imread('Image/imjunhyuk.jpg')
 img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
 rects, shapes, _ = find_faces(img_rgb)
@@ -76,22 +76,22 @@ for i, desc in enumerate(descriptors):
       found = True
 
       text = ax.text(rects[i][0][0], rects[i][0][1], name,
-                     color='b', fontsize=40, fontweight='bold')
+                     color='b', fontsize=20)
       text.set_path_effects([path_effects.Stroke(linewidth=10, foreground='white'), path_effects])
       rect = patches.Rectangle(rects[i][0],
                                rects[i][1][1] - rects[i][0][1],
                                rects[i][1][0] - rects[i][0][0],
-                               linewidth=2, edgecolor='w', facecolor='none')
+                               linewidth=2, edgecolor='r', facecolor='none')
       ax.add_patch(rect)
       break
 
     if not found:
       ax.text(rects[i][0][0], rects[i][0][1], 'unknown',
-              color='r', fontsize=20, fontweight='bold')
+              color='r', fontsize=20, fontweight='normal')
       rect = patches.Rectangle(rects[i][0],
                                rects[i][1][1] - rects[i][0][1],
                                rects[i][1][0] - rects[i][0][0],
                                linewidth=2, edgecolor='r', facecolor='none')
       ax.add_patch(rect)
 
-    plt.show()
+plt.show()
