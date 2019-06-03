@@ -1,16 +1,13 @@
 import dlib # face detection, face recognition
 import cv2 # 영상처리
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.patheffects as path_effects
 
 img_path = {
-  'imjunhyuk':'Image/imjunhyuk.jpg'
+  # 'name' : 'path'
 }
 
 descs = {
-  'imjunhyuk':None
+  # 'name' : 'NONE'
 }
 
 detector = dlib.get_frontal_face_detector()
@@ -56,42 +53,3 @@ for name, img_path in img_path.items():
 
 np.save('Result/descs.npy', descs)
 print(descs)
-
-img_bgr = cv2.imread('Image/imjunhyuk.jpg')
-img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-
-rects, shapes, _ = find_faces(img_rgb)
-descriptors = encode_face(img_rgb, shapes)
-
-fig, ax = plt.subplots(1, figsize=(20, 20))
-ax.imshow(img_rgb)
-
-for i, desc in enumerate(descriptors):
-  found = False
-
-  for name, saved_desc in descs.items():
-    dist = np.linalg.norm([desc] - saved_desc, axis=1) # a, b 벡터 사이의 거리를 구함
-
-    if dist < 0.6:
-      found = True
-
-      text = ax.text(rects[i][0][0], rects[i][0][1], name,
-                     color='b', fontsize=20)
-      text.set_path_effects([path_effects.Stroke(linewidth=10, foreground='white'), path_effects])
-      rect = patches.Rectangle(rects[i][0],
-                               rects[i][1][1] - rects[i][0][1],
-                               rects[i][1][0] - rects[i][0][0],
-                               linewidth=2, edgecolor='r', facecolor='none')
-      ax.add_patch(rect)
-      break
-
-    if not found:
-      ax.text(rects[i][0][0], rects[i][0][1], 'unknown',
-              color='r', fontsize=20, fontweight='normal')
-      rect = patches.Rectangle(rects[i][0],
-                               rects[i][1][1] - rects[i][0][1],
-                               rects[i][1][0] - rects[i][0][0],
-                               linewidth=2, edgecolor='r', facecolor='none')
-      ax.add_patch(rect)
-
-plt.show()
