@@ -36,19 +36,22 @@ class MainWindow(QMainWindow):
 
         self.mainImg = QLabel(self) # main사진이 들어갈 Label
         self.mainImg.setObjectName('mainImg')
-        self.mainImg.setMaximumSize(700, 500) # label 최대 width, height를 조절
+        self.mainImg.setMaximumSize(900, 600) # label 최대 width, height를 조절
         self.mainImg.setScaledContents(1) # Image를 label 크기에 맞게 조절. 1 : true, 0 : false. false인 경우, 이미지가 label 크기만큼만 나오고 잘린다.
 
         self.faceImg = QLabel(self) # 얼굴사진이 들어갈 Label
         self.faceImg.setObjectName('faceImg')
-        self.faceImg.setMaximumSize(400, 400)
+        self.faceImg.setMinimumSize(420, 420)
+        self.faceImg.setMaximumSize(420, 420)
         self.faceImg.setScaledContents(1)
 
         self.detectedFaceImg = QLabel(self) # main에서 찾은 얼굴사진이 들어갈 Label
-        self.detectedFaceImg.setMaximumSize(400, 400)
+        self.detectedFaceImg.setMinimumSize(420, 420)
+        self.detectedFaceImg.setMaximumSize(420, 420)
         self.detectedFaceImg.setScaledContents(1)
 
         # image Click Event 설정
+        # self.WIDGET.mousePressEvent = functools.partial(Method, WIDGET)
         self.mainImg.mousePressEvent = functools.partial(MainWindow.fileOpenMethod, self.mainImg)
         self.faceImg.mousePressEvent = functools.partial(MainWindow.fileOpenMethod, self.faceImg)
 
@@ -109,13 +112,24 @@ class MainWindow(QMainWindow):
         self.horizontalGroupBox = QGroupBox("face finder")
 
         self.grid_layout = QGridLayout()
+        self.grid_layout.addWidget(self.faceImg, 0, 0)
+        self.grid_layout.addWidget(self.detectedFaceImg, 1, 0)
+
+        self.grid_layout2 = QGridLayout()
+        self.grid_layout2.addWidget(self.mainImg, 0, 0)
+        self.grid_layout2.addLayout(self.grid_layout, 0, 1)
+
+        '''        
+        self.grid_layout = QGridLayout()
         # grid_layout.addWidget( WIDGET, 행, 열 )
         self.grid_layout.addWidget(self.mainImg, 0, 0)
-        # self.grid_layout.addWidget(self.fileOpenBtn, 0, 0)
         self.grid_layout.addWidget(self.faceImg, 0, 1)
         self.grid_layout.addWidget(self.detectedFaceImg, 1, 1)
 
         self.horizontalGroupBox.setLayout(self.grid_layout)
+        '''
+
+        self.horizontalGroupBox.setLayout(self.grid_layout2)
 
 
 def main():
