@@ -3,11 +3,11 @@ import cv2 # 영상처리
 import numpy as np
 
 img_path = {
-  # 'name' : 'path'
+  'Yu' : 'Images/Yu.jpg'
 }
 
 descs = {
-  # 'name' : 'NONE'
+  'Yu' : 'NONE'
 }
 
 detector = dlib.get_frontal_face_detector()
