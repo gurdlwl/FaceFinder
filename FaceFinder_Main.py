@@ -8,14 +8,14 @@ from PyQt5.QtCore import Qt
 from qtpy import QtGui
 import functools
 import dlib, cv2
+import numpy as np # 행렬 연산
 
 face_detector = dlib.get_frontal_face_detector()
 shape_predicter = dlib.shape_predictor('Models/shape_predictor_68_face_landmarks.dat')
 face_recognition_model = dlib.face_recognition_model_v1('Models/dlib_face_recognition_resnet_model_v1.dat')
 
-#허용 오차 범위
-TOLERANCE = 0.5
-
+DETECTION_ACCURACY = 4 # 정확도
+descs = {}
 
 
 class MainWindow(QMainWindow):
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         detectAction.setStatusTip('Change Mode to Face Detect')
         detectAction.triggered.connect(self.face_detection_Mode)
 
-        recognizeAction = QAction('Face Recognize Mode (To be developed)', self)
+        recognizeAction = QAction('Face Recognize Mode', self)
         recognizeAction.setShortcut('Ctrl+2')
         recognizeAction.setStatusTip('Change Mode to Face Detect')
         recognizeAction.triggered.connect(self.face_recognition_Mode)
@@ -101,6 +101,7 @@ class MainWindow(QMainWindow):
         Menu = menubar.addMenu('Menu')
         Menu.addAction(exitAction)
         Menu.addAction(refreshAction)
+
         Mode = menubar.addMenu('Mode')
         Mode.addAction(detectAction)
         Mode.addAction(recognizeAction)
@@ -145,7 +146,7 @@ class MainWindow(QMainWindow):
 
             if mode == 'recognition' :
                 if labelName == 'faceImg' :
-                    MainWindow.face_recognition(self, filename[0])
+                    MainWindow.face_recognition_encodeFile(self, filename[0])
                 if labelName == 'mainImg' :
                     MainWindow.face_recognition(self, filename[0])
 
@@ -181,7 +182,7 @@ class MainWindow(QMainWindow):
         print('\n* * * Face Detection Start * * *')
 
         img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB) # Image 불러올 때 BGR로 불러옴. 바꿔주기 위해서 cv2.COLOR_BGR2RGB 사용
-        dets = face_detector(img, 3) # (img, INT) 숫자가 높을수록 face detect 정확도 올라감 but 속도 저하
+        dets = face_detector(img, DETECTION_ACCURACY) # (img, INT) 숫자가 높을수록 face detect 정확도 올라감 but 속도 저하
 
         if len(dets) == 0 :
             print('No faces found.')
@@ -205,18 +206,78 @@ class MainWindow(QMainWindow):
         print('* * * Face Detection Finish * * *\n')
 
 
-    def face_recognition(self, path):
-        print('\n* * * Face Recognition Start * * *')
+    def face_recognition_encodeFile(self, path):
+        print('\n* * * Face Encode File Start * * *')
 
         img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB)
-        dets = face_detector(img, 3)
+        dets = face_detector(img, DETECTION_ACCURACY)
+
+
 
         if len(dets) == 0 :
             print('No Face Found.')
 
         if len(dets) > 0 :
-            print('hi')
+            print('Number of faces detected: {}'.format(len(dets)))
 
+            rects, shapes = [], []
+            shapes_np = np.zeros((len(dets), 68, 2), dtype=np.int)
+
+            for i, d in enumerate(dets) :
+                rect = ((d.left(), d.top()), (d.right(), d.bottom()))
+                rects.append(rect)
+
+                shape = shape_predicter(img, d)
+
+                for j in range(0, 68) :
+                    shapes_np[i][j] = (shape.part(i).x, shape.part(i).y)
+                shapes.append(shape)
+
+            # face Incoding
+            # 사람의 얼굴 landmark 68개를 인코더에 넣은 후 128개의 벡터로 만들어 숫자들로 얼굴을 판별
+            face_descriptors = []
+
+            for shape in shapes :
+                face_descriptor = face_recognition_model.compute_face_descriptor(img, shape)
+                face_descriptors.append(np.array(face_descriptor))
+
+            descs['Me'] = np.array(face_descriptors)[0]
+            np.save('Result/desc.npy', descs)
+
+        print('Face Recognition Result : ')
+        print(descs)
+        print('* * * Face Encode File Finish * * *\n')
+
+
+    def face_recognition(self, path):
+        print('\n* * * Face Recognition Start * * *')
+
+        img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB)
+        dets = face_detector(img, DETECTION_ACCURACY)
+
+        if len(dets) == 0 :
+            print('No Face Found.')
+
+        if len(dets) > 0 :
+            print('Number of faces detected: {}'.format(len(dets)))
+
+            for i, d in enumerate(dets):
+                shape = shape_predicter(img, d)
+                face_descriptor = face_recognition_model.compute_face_descriptor(img, shape)
+
+                last_found = {'name': 'unknown', 'dist': 0.4, 'color': (0, 0, 255)}
+
+                for name, saved_desc in descs.items():
+                    dist = np.linalg.norm([face_descriptor] - saved_desc, axis=1) # a, b사이의 벡터값 차이 구함
+
+                    if dist < last_found['dist']:
+                        last_found = {'name': name, 'dist': dist, 'color': (0, 255, 0)}
+
+                cv2.rectangle(img, (d.left(), d.top()), (d.right(), d.bottom()), color=last_found['color'], thickness=2)
+
+            cv2.imwrite("Result/Recog.jpg", img)
+            detectedImg = QtGui.QPixmap('Result/Recog.jpg')
+            self.parent().parent().detectedFaceImg.setPixmap(detectedImg)
 
         print('* * * Face Recognition Finish * * *\n')
 
