@@ -1,9 +1,8 @@
 import sys
 
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget, QAction, qApp, QLabel, QGridLayout, QPushButton, \
-    QFileDialog, QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QGroupBox
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QLabel, QGridLayout, QFileDialog, QGroupBox
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from qtpy import QtGui
 import functools
@@ -180,12 +179,14 @@ class MainWindow(QMainWindow):
 
     def face_detection(self, path):
         print('\n* * * Face Detection Start * * *')
-
+        '''
         img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB) # Image 불러올 때 BGR로 불러옴. 바꿔주기 위해서 cv2.COLOR_BGR2RGB 사용
         dets = face_detector(img, DETECTION_ACCURACY) # (img, INT) 숫자가 높을수록 face detect 정확도 올라감 but 속도 저하
 
         if len(dets) == 0 :
             print('No faces found.')
+        '''
+        img, dets = self.parent().parent().face_detect(path)
 
         if len(dets) > 0 :
             print('Number of faces detected: {}'.format(len(dets)))
@@ -211,8 +212,6 @@ class MainWindow(QMainWindow):
 
         img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB)
         dets = face_detector(img, DETECTION_ACCURACY)
-
-
 
         if len(dets) == 0 :
             print('No Face Found.')
@@ -281,6 +280,17 @@ class MainWindow(QMainWindow):
 
         print('* * * Face Recognition Finish * * *\n')
 
+
+    def face_detect(self, image):
+
+        img = cv2.cvtColor(dlib.load_rgb_image(image), cv2.COLOR_BGR2RGB)
+        dets = face_detector(img, DETECTION_ACCURACY)
+
+        if len(dets) == 0:
+            print('No Face Found.')
+
+        if len(dets) > 0:
+            return img, dets;
 
 def main():
     app = QApplication(sys.argv)
