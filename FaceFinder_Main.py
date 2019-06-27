@@ -13,7 +13,7 @@ face_detector = dlib.get_frontal_face_detector()
 shape_predicter = dlib.shape_predictor('Models/shape_predictor_68_face_landmarks.dat')
 face_recognition_model = dlib.face_recognition_model_v1('Models/dlib_face_recognition_resnet_model_v1.dat')
 
-DETECTION_ACCURACY = 4 # 정확도
+DETECTION_ACCURACY = 1 # 정확도
 descs = {}
 
 
@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
 
 
     def initUI(self):
-        self.setObjectName('default')
+        self.setObjectName('detection')
 
         self.defaultLabelSetting() # QLabel default 설정
         self.setBaseImg() # QLabel base Image 설정
@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
             print('Mode : ' + mode)
 
             # mode와 labelName 확인 후 해당 파일 넘겨줘서 detection, face recognition
-            if mode == 'default' or mode == 'detection' :
+            if mode == 'detection' :
                 if labelName == 'mainImg' :
                     MainWindow.face_detection(self, filename[0])
 
@@ -179,13 +179,7 @@ class MainWindow(QMainWindow):
 
     def face_detection(self, path):
         print('\n* * * Face Detection Start * * *')
-        '''
-        img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB) # Image 불러올 때 BGR로 불러옴. 바꿔주기 위해서 cv2.COLOR_BGR2RGB 사용
-        dets = face_detector(img, DETECTION_ACCURACY) # (img, INT) 숫자가 높을수록 face detect 정확도 올라감 but 속도 저하
 
-        if len(dets) == 0 :
-            print('No faces found.')
-        '''
         img, dets = self.parent().parent().face_detect(path)
 
         if len(dets) > 0 :
@@ -210,11 +204,7 @@ class MainWindow(QMainWindow):
     def face_recognition_encodeFile(self, path):
         print('\n* * * Face Encode File Start * * *')
 
-        img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB)
-        dets = face_detector(img, DETECTION_ACCURACY)
-
-        if len(dets) == 0 :
-            print('No Face Found.')
+        img, dets = self.parent().parent().face_detect(path)
 
         if len(dets) > 0 :
             print('Number of faces detected: {}'.format(len(dets)))
@@ -251,11 +241,7 @@ class MainWindow(QMainWindow):
     def face_recognition(self, path):
         print('\n* * * Face Recognition Start * * *')
 
-        img = cv2.cvtColor(dlib.load_rgb_image(path), cv2.COLOR_BGR2RGB)
-        dets = face_detector(img, DETECTION_ACCURACY)
-
-        if len(dets) == 0 :
-            print('No Face Found.')
+        img, dets = self.parent().parent().face_detect(path)
 
         if len(dets) > 0 :
             print('Number of faces detected: {}'.format(len(dets)))
